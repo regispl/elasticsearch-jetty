@@ -1,4 +1,4 @@
-package com.sonian.elasticsearch.util;
+package com.sonian.elasticsearch.security;
 
 import com.sonian.elasticsearch.http.jetty.security.ExtendedCredential;
 import org.eclipse.jetty.util.security.Credential;
@@ -17,7 +17,7 @@ public class ExtendedPassword extends Password {
 	{
 		if (arg.length != 1 && arg.length != 2)
 		{
-			System.err.println("Usage - java com.sonian.elasticsearch.util.ExtendedPassword [<user>] <password>");
+			System.err.println("Usage - java com.sonian.elasticsearch.security.ExtendedPassword [<user>] <password>");
 			System.err.println("If the password is ?, the user will be prompted for the password");
 			System.exit(1);
 		}
