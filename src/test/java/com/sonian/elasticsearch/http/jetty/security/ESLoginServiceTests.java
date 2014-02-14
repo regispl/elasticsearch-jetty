@@ -52,6 +52,16 @@ public class ESLoginServiceTests extends AbstractJettyHttpServerTests {
         assertThat(resp.errorCode(), equalTo(401));
     }
 
+	@Test
+	public void testSha1() throws Exception {
+		publishAuth("server1", "foo", "SHA:I5nw0hTkEwMZm/kKnoPnqD5dPg7InWDr5SFQZc99R6i9rSvhzyOnD1RIRn00FkPP", "pray:readwrite:love"); // password bar
+		HttpClient http = httpClient("server1", "foo", "bar");
+		String data;
+		data = jsonBuilder().startObject().field("blip", 1).endObject().string();
+		HttpClientResponse resp = http.request("PUT", "/foo/bar/1", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(201));
+	}
+
     @Test
     public void testTwoUsers()  throws Exception {
         publishAuth("server1", "john", "password1", "readwrite");

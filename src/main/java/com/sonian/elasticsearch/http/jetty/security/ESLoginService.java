@@ -136,7 +136,7 @@ public class ESLoginService extends MappedLoginService {
                 GetField passwordGetField = response.getField(passwordField);
                 if (passwordGetField != null) {
                     Log.debug("user [{}] using password auth", user);
-                    credential = Credential.getCredential((String) passwordGetField.getValue());
+                    credential = ExtendedCredential.getCredential((String) passwordGetField.getValue());
                 }
                 String[] roles = getStringValues(response.getField(rolesField));
                 return putUser(user, credential, roles);
