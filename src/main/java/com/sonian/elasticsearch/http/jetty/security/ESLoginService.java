@@ -31,12 +31,12 @@ public class ESLoginService extends MappedLoginService {
 
     private volatile Client client;
 
-    public ESLoginService() {
-    }
+	public ESLoginService() {
+	}
 
     public ESLoginService(String name) {
         setName(name);
-    }
+	}
 
     public void setClient(Client client) {
         this.client = client;
@@ -105,7 +105,7 @@ public class ESLoginService extends MappedLoginService {
 
     @Override
     public UserIdentity login(String username, Object credentials) {
-        if (cacheTime >= 0) {
+		if (cacheTime >= 0) {
             long now = System.currentTimeMillis();
 
             if (now - lastHashPurge > cacheTime || cacheTime == 0) {
@@ -125,17 +125,17 @@ public class ESLoginService extends MappedLoginService {
 
     @Override
     public UserIdentity loadUser(String user) {
-        Log.debug("attempting to load user [{}]", user);
-        try {
+        Log.info("attempting to load user [{}]", user);
+		try {
             GetResponse response = client.prepareGet(authIndex, authType, user)
                     .setFields(passwordField, rolesField)
                     .execute().actionGet();
             if (response.isExists()) {
-                Log.debug("user [{}] exists; looking for credentials...", user);
+                Log.info("user [{}] exists; looking for credentials...", user);
                 Credential credential = null;
                 GetField passwordGetField = response.getField(passwordField);
                 if (passwordGetField != null) {
-                    Log.debug("user [{}] using password auth", user);
+                    Log.info("user [{}] using password auth", user);
                     credential = ExtendedCredential.getCredential((String) passwordGetField.getValue());
                 }
                 String[] roles = getStringValues(response.getField(rolesField));

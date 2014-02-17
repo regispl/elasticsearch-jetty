@@ -53,7 +53,7 @@ public class ESLoginServiceTests extends AbstractJettyHttpServerTests {
     }
 
 	@Test
-	public void testSha1() throws Exception {
+	public void testSha() throws Exception {
 		publishAuth("server1", "foo", "SHA:I5nw0hTkEwMZm/kKnoPnqD5dPg7InWDr5SFQZc99R6i9rSvhzyOnD1RIRn00FkPP", "pray:readwrite:love"); // password bar
 		HttpClient http = httpClient("server1", "foo", "bar");
 		String data;
@@ -89,6 +89,34 @@ public class ESLoginServiceTests extends AbstractJettyHttpServerTests {
         resp = http.request("PUT", "/foo/bar/4", data.getBytes());
         assertThat(resp.errorCode(), equalTo(401));
     }
+
+	@Test
+	public void testTwoUsersSha()  throws Exception {
+		publishAuth("server1", "john", "SHA:C3g20saj5UMCvVR4hn9Or5y6i7pTT3XM/ajRIZCWogf3ViCfwXA5STRKMK9Od/eQ", "readwrite");	// password1
+		publishAuth("server1", "jane", "SHA:G/lGbx8ytl/Qi37A0fMqXmgxVqwKy34lEuDvBU0Ub4dYgv0Ev11QDtCtNj7D11Cv", "readwrite");	// password2
+		String data;
+		data = jsonBuilder().startObject().field("blip", 1).endObject().string();
+
+		HttpClient http = httpClient("server1", "john", "password1");
+		HttpClientResponse resp = http.request("PUT", "/foo/bar/1", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(201));
+
+		http = httpClient("server1", "jane", "password2");
+		resp = http.request("PUT", "/foo/bar/2", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(201));
+
+		http = httpClient("server1", "john", "password2");
+		resp = http.request("PUT", "/foo/bar/3", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(401));
+
+		http = httpClient("server1", "jane", "password1");
+		resp = http.request("PUT", "/foo/bar/4", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(401));
+
+		http = httpClient("server1", "JaNe", "password2");
+		resp = http.request("PUT", "/foo/bar/4", data.getBytes());
+		assertThat(resp.errorCode(), equalTo(401));
+	}
 
     @Test
     public void testEmptyPassword()  throws Exception {
