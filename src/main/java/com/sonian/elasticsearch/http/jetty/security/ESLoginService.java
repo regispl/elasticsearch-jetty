@@ -6,6 +6,8 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.index.get.GetField;
 import org.elasticsearch.indices.IndexMissingException;
 
@@ -30,6 +32,8 @@ public class ESLoginService extends MappedLoginService {
     private volatile long lastHashPurge;
 
     private volatile Client client;
+
+	private static final ESLogger LOG = ESLoggerFactory.getLogger(ESLoginService.class.toString());
 
 	public ESLoginService() {
 	}
@@ -116,35 +120,35 @@ public class ESLoginService extends MappedLoginService {
 
         UserIdentity u = super.login(username, credentials);
         if (u != null) {
-            Log.info("authenticating user [{}]", username);
+			LOG.info("authenticating user [{}]", username);
         } else {
-            Log.info("did not find user [{}]", username);
+			LOG.debug("did not find user [{}]", username);
         }
         return u;
     }
 
     @Override
     public UserIdentity loadUser(String user) {
-        Log.info("attempting to load user [{}]", user);
+		LOG.debug("attempting to load user [{}]", user);
 		try {
             GetResponse response = client.prepareGet(authIndex, authType, user)
                     .setFields(passwordField, rolesField)
                     .execute().actionGet();
             if (response.isExists()) {
-                Log.info("user [{}] exists; looking for credentials...", user);
+				LOG.debug("user [{}] exists; looking for credentials...", user);
                 Credential credential = null;
                 GetField passwordGetField = response.getField(passwordField);
                 if (passwordGetField != null) {
-                    Log.info("user [{}] using password auth", user);
+					LOG.debug("user [{}] using password auth", user);
                     credential = ExtendedCredential.getCredential((String) passwordGetField.getValue());
                 }
                 String[] roles = getStringValues(response.getField(rolesField));
                 return putUser(user, credential, roles);
             }
         } catch (IndexMissingException e) {
-            Log.warn("no auth index [{}]", authIndex);
+			LOG.warn("no auth index [{}]", authIndex);
         } catch (Exception e) {
-            Log.warn("error finding user [" + user + "] in [" + authIndex + "]", e);
+			LOG.warn("error finding user [" + user + "] in [" + authIndex + "]", e);
         }
         return null;
     }
