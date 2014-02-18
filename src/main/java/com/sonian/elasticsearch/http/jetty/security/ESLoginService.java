@@ -3,7 +3,6 @@ package com.sonian.elasticsearch.http.jetty.security;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.security.MappedLoginService;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.logging.ESLogger;
@@ -109,25 +108,46 @@ public class ESLoginService extends MappedLoginService {
 
     @Override
     public UserIdentity login(String username, Object credentials) {
-		if (cacheTime >= 0) {
-            long now = System.currentTimeMillis();
-
-            if (now - lastHashPurge > cacheTime || cacheTime == 0) {
-                _users.clear();
-                lastHashPurge = now;
-            }
+		if (isUsersCacheOn()) {
+			maybeInvalidateUsersCache();
         }
 
-        UserIdentity u = super.login(username, credentials);
-        if (u != null) {
-			LOG.info("authenticating user [{}]", username);
-        } else {
-			LOG.debug("did not find user [{}]", username);
-        }
-        return u;
+		return getUserIdentity(username, credentials);
     }
 
-    @Override
+	private UserIdentity getUserIdentity(String username, Object credentials) {
+		UserIdentity u = super.login(username, credentials);
+		String message = u != null ? "authenticating user [{}]" : "did not find user [{}]";
+		LOG.debug(message, username);
+		return u;
+	}
+
+	private boolean isUsersCacheOn() {
+		return cacheTime >= 0;
+	}
+
+	private void maybeInvalidateUsersCache() {
+		long now = System.currentTimeMillis();
+
+		if (shouldInvalidateUsersCache(now)) {
+			invalidateUsersCache(now);
+		}
+	}
+
+	private boolean shouldInvalidateUsersCache(long now) {
+		return hasUsersCacheExpired(now) || cacheTime == 0;
+	}
+
+	private boolean hasUsersCacheExpired(long now) {
+		return now - lastHashPurge > cacheTime;
+	}
+
+	private void invalidateUsersCache(long now) {
+		_users.clear();
+		lastHashPurge = now;
+	}
+
+	@Override
     public UserIdentity loadUser(String user) {
 		LOG.debug("attempting to load user [{}]", user);
 		try {
@@ -136,14 +156,7 @@ public class ESLoginService extends MappedLoginService {
                     .execute().actionGet();
             if (response.isExists()) {
 				LOG.debug("user [{}] exists; looking for credentials...", user);
-                Credential credential = null;
-                GetField passwordGetField = response.getField(passwordField);
-                if (passwordGetField != null) {
-					LOG.debug("user [{}] using password auth", user);
-                    credential = ExtendedCredential.getCredential((String) passwordGetField.getValue());
-                }
-                String[] roles = getStringValues(response.getField(rolesField));
-                return putUser(user, credential, roles);
+				return loadAcls(user, response);
             }
         } catch (IndexMissingException e) {
 			LOG.warn("no auth index [{}]", authIndex);
@@ -153,7 +166,22 @@ public class ESLoginService extends MappedLoginService {
         return null;
     }
 
-    private String[] getStringValues(GetField field) {
+	private UserIdentity loadAcls(String user, GetResponse response) {
+		Credential credential = maybeRetrieveCredential(user, response);
+		String[] roles = getStringValues(response.getField(rolesField));
+		return putUser(user, credential, roles);
+	}
+
+	private Credential maybeRetrieveCredential(String user, GetResponse response) {
+		GetField passwordGetField = response.getField(passwordField);
+		if (passwordGetField != null) {
+			LOG.debug("user [{}] using password auth", user);
+			return ExtendedCredential.getCredential((String) passwordGetField.getValue());
+		}
+		return null;
+	}
+
+	private String[] getStringValues(GetField field) {
         List<String> values = newArrayList();
         if (field != null) {
             for(Object value : field.getValues()) {
