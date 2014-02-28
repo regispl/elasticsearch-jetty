@@ -72,6 +72,18 @@
       </roles>
       <timezone>-3</timezone>
     </developer>
+    <developer>
+        <id>michalm</id>
+        <name>Michal Michalski</name>
+        <email>michal.michalski@boxever.com</email>
+        <url>http://michalski.im</url>
+        <organization>Boxever Ltd.</organization>
+        <organizationUrl>http://www.boxever.com</organizationUrl>
+        <roles>
+            <role>developer</role>
+        </roles>
+        <timezone>0</timezone>
+    </developer>
   </developers>
 
 
