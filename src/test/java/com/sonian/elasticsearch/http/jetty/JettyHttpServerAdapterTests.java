@@ -17,14 +17,17 @@ package com.sonian.elasticsearch.http.jetty;
 
 import static org.elasticsearch.common.collect.Maps.newHashMap;
 import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.common.collect.MapBuilder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.HttpURLConnection;
+import java.net.URLConnection;
 import java.util.Map;
 
 /**
@@ -66,14 +69,14 @@ public class JettyHttpServerAdapterTests extends AbstractJettyHttpServerTests {
         // Create Index
 
         HttpClientResponse response = httpClient("server1", "user", "Passw0rd").request("PUT", "testidx", settings);
-        assertThat((Boolean) response.get("acknowledged"), equalTo(true));
+        assertThat((Boolean) response.get("ok"), equalTo(true));
         client("server1").admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
 
         Map<String, Object> data = newHashMap();
         data.put("id", "1");
         data.put("message", "test");
         response = httpClient("server1", "user", "Passw0rd").request("PUT", "testidx/msg/1?refresh=true", data);
-        assertThat((Boolean) response.get("created"), equalTo(true));
+        assertThat((Boolean) response.get("ok"), equalTo(true));
 
         response = httpClient("server1").request("GET", "testidx/msg/_search?q=*:*");
         assertThat((Integer)((Map<String, Object>) response.get("hits")).get("total"), equalTo(1));
@@ -96,14 +99,14 @@ public class JettyHttpServerAdapterTests extends AbstractJettyHttpServerTests {
         assertThat(response.errorCode(), equalTo(HttpURLConnection.HTTP_UNAUTHORIZED));
 
         response = httpClient("server1", "user", "Passw0rd").request("PUT", "testidx", settings);
-        assertThat((Boolean) response.get("acknowledged"), equalTo(true));
+        assertThat((Boolean) response.get("ok"), equalTo(true));
         client("server1").admin().cluster().prepareHealth().setWaitForGreenStatus().execute().actionGet();
 
         Map<String, Object> data = newHashMap();
         data.put("id", "1");
         data.put("message", "test");
         response = httpClient("server1", "user", "Passw0rd").request("PUT", "testidx/msg/1?refresh=true", data);
-        assertThat((Boolean) response.get("created"), equalTo(true));
+        assertThat((Boolean) response.get("ok"), equalTo(true));
 
         data = newHashMap();
         data.put("id", "2");
